@@ -1,0 +1,1295 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CONVERSOR DE CORDENADAS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg-1: #f1f7eb;
+      --bg-2: #dae8cf;
+      --ink: #1f2e1b;
+      --muted: #4b6142;
+      --card: #ffffff;
+      --line: #c6d8b9;
+      --accent: #2f7d32;
+      --accent-2: #1f5f24;
+      --warn-bg: #fff1f1;
+      --warn-line: #d97777;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Outfit", "Segoe UI", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 10% 15%, rgba(97, 151, 88, 0.25), transparent 35%),
+        radial-gradient(circle at 85% 85%, rgba(54, 120, 56, 0.18), transparent 32%),
+        linear-gradient(150deg, var(--bg-1), var(--bg-2));
+      padding: 24px;
+    }
+
+    .wrap {
+      width: min(1100px, 100%);
+      margin: 0 auto;
+    }
+
+    .hero {
+      background: linear-gradient(135deg, rgba(47, 125, 50, 0.95), rgba(31, 95, 36, 0.96));
+      color: #f7fff3;
+      border-radius: 16px;
+      padding: 22px;
+      box-shadow: 0 14px 34px rgba(24, 57, 22, 0.24);
+      transform: translateY(6px);
+      opacity: 0;
+      animation: float-in 0.48s ease forwards;
+    }
+
+    .hero h1 {
+      margin: 0 0 8px;
+      font-size: clamp(1.3rem, 2vw, 1.9rem);
+      letter-spacing: 0.2px;
+    }
+
+    .hero p {
+      margin: 0;
+      color: rgba(247, 255, 243, 0.92);
+      max-width: 820px;
+      line-height: 1.45;
+    }
+
+    .grid {
+      margin-top: 16px;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 14px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 16px;
+      box-shadow: 0 10px 20px rgba(28, 62, 24, 0.07);
+      transform: translateY(8px);
+      opacity: 0;
+      animation: float-in 0.45s ease forwards;
+    }
+
+    .card:nth-child(2) {
+      animation-delay: 0.08s;
+    }
+
+    .card:nth-child(3) {
+      animation-delay: 0.14s;
+    }
+
+    .card h2 {
+      margin: 0 0 10px;
+      font-size: 1rem;
+      color: var(--accent-2);
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .btn {
+      border: 0;
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-family: inherit;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.14s ease, box-shadow 0.14s ease, opacity 0.14s ease;
+    }
+
+    .btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+      box-shadow: 0 8px 16px rgba(47, 125, 50, 0.28);
+    }
+
+    .btn-secondary {
+      background: #edf5e8;
+      color: #1b4b1e;
+      border: 1px solid #cae0bc;
+    }
+
+    .btn:hover:not(:disabled) {
+      transform: translateY(-1px);
+    }
+
+    .file-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      border: 1px dashed #8aae7b;
+      background: #f6fbf2;
+      border-radius: 10px;
+      padding: 10px 12px;
+      color: var(--muted);
+      min-height: 40px;
+    }
+
+    input[type="file"] {
+      display: none;
+    }
+
+    .meta {
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 0.94rem;
+      min-height: 22px;
+    }
+
+    .table-box {
+      overflow: auto;
+      border: 1px solid #d6e4cd;
+      border-radius: 10px;
+      max-height: 340px;
+      background: #fff;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.93rem;
+      min-width: 700px;
+    }
+
+    th,
+    td {
+      border-bottom: 1px solid #ebf2e5;
+      padding: 8px 10px;
+      text-align: left;
+      white-space: nowrap;
+    }
+
+    th {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      background: #eef7e8;
+      color: #214f24;
+      font-weight: 600;
+    }
+
+    tr:nth-child(even) td {
+      background: #fbfdf9;
+    }
+
+    .warn {
+      margin-top: 10px;
+      padding: 10px;
+      border-radius: 10px;
+      background: var(--warn-bg);
+      border: 1px solid var(--warn-line);
+      color: #7e2323;
+      display: none;
+      max-height: 170px;
+      overflow: auto;
+      font-size: 0.92rem;
+      line-height: 1.35;
+    }
+
+    .hint {
+      color: var(--muted);
+      font-size: 0.9rem;
+      margin-top: 8px;
+    }
+
+    @keyframes float-in {
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @media (max-width: 700px) {
+      body {
+        padding: 14px;
+      }
+
+      .hero,
+      .card {
+        border-radius: 12px;
+      }
+
+      .actions {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .btn,
+      .file-label {
+        width: 100%;
+        justify-content: center;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <section class="hero">
+      <h1>CONVERSOR DE CORDENADAS</h1>
+      <p>
+        
+        El sistema valida datos UTM WGS84 zona 18S y permite descargar formatos para GEOSERFOR, SISFOR, SERNANP, SIGRID, SIGDA y SICAR.
+      </p>
+    </section>
+
+    <section class="grid">
+      <article class="card">
+        <h2>Paso 1. Plantilla y carga</h2>
+        <div class="actions">
+          <button id="btnTemplate" class="btn btn-secondary" type="button">Descargar plantilla</button>
+
+          <label class="file-label" for="fileInput">
+            Seleccionar Excel o CSV
+            <input id="fileInput" type="file" accept=".xlsx,.xls,.csv,.txt" />
+          </label>
+
+          <button id="btnProcess" class="btn btn-primary" type="button" disabled>Procesar archivo</button>
+        </div>
+        <p class="hint">Se toma la primera hoja del Excel y se omiten filas vacias.</p>
+        <div id="fileMeta" class="meta">Aun no hay archivo cargado.</div>
+      </article>
+
+      <article class="card">
+        <h2>Paso 2. Resultado</h2>
+        <div class="actions">
+          <button id="btnKml" class="btn btn-secondary" type="button" disabled>Descargar KML</button>
+          <button id="btnShp" class="btn btn-secondary" type="button" disabled>Descargar Shapefile (ZIP)</button>
+          <button id="btnPack" class="btn btn-primary" type="button" disabled>Exportar plataformas (ZIP por shapefile)</button>
+        </div>
+        <p class="hint">Cada shapefile se exporta comprimido en su propio ZIP con su nombre correspondiente.</p>
+        <div id="summary" class="meta">Sin registros procesados.</div>
+        <div id="warnings" class="warn"></div>
+      </article>
+
+      <article class="card">
+        <h2>Vista previa</h2>
+        <div class="table-box">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>PUNTO</th>
+                <th>ZONA_UTM</th>
+                <th>ESTE</th>
+                <th>NORTE</th>
+                <th>LATITUD</th>
+                <th>LONGITUD</th>
+              </tr>
+            </thead>
+            <tbody id="previewBody">
+              <tr>
+                <td colspan="7">Sin datos para mostrar.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </article>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+  <script>
+    const state = {
+      file: null,
+      records: [],
+      warnings: []
+    };
+
+    const REQUIRED = {
+      punto: ["PUNTO", "ID", "CODIGO", "NOMBRE"],
+      zona: ["ZONA_UTM", "ZONA", "UTM", "HUSO"],
+      este: ["COORDENADA_ESTE", "COORDENADAS_ESTE", "ESTE", "X"],
+      norte: ["COORDENADAS_NORTE", "COORDENADA_NORTE", "NORTE", "Y"]
+    };
+
+    const el = {
+      fileInput: document.getElementById("fileInput"),
+      btnTemplate: document.getElementById("btnTemplate"),
+      btnProcess: document.getElementById("btnProcess"),
+      btnKml: document.getElementById("btnKml"),
+      btnShp: document.getElementById("btnShp"),
+      btnPack: document.getElementById("btnPack"),
+      fileMeta: document.getElementById("fileMeta"),
+      summary: document.getElementById("summary"),
+      warnings: document.getElementById("warnings"),
+      previewBody: document.getElementById("previewBody")
+    };
+
+    el.fileInput.addEventListener("change", onSelectFile);
+    el.btnProcess.addEventListener("click", onProcess);
+    el.btnKml.addEventListener("click", downloadKml);
+    el.btnShp.addEventListener("click", downloadShapefileZip);
+    el.btnPack.addEventListener("click", downloadPlatformPackage);
+    el.btnTemplate.addEventListener("click", downloadTemplate);
+
+    function normalizeHeader(value) {
+      return String(value || "")
+        .trim()
+        .toUpperCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^A-Z0-9]+/g, "_")
+        .replace(/^_+|_+$/g, "");
+    }
+
+    function normalizeZone(value) {
+      const text = String(value || "").trim().toUpperCase().replace(/\s+/g, "");
+      if (!text) {
+        return "18S";
+      }
+      const match = text.match(/^(\d{1,2})([NS])$/);
+      if (!match) {
+        return null;
+      }
+      return `${parseInt(match[1], 10)}${match[2]}`;
+    }
+
+    function sanitizePointName(value, fallbackIndex) {
+      const raw = String(value || "").trim();
+      if (raw) {
+        return raw;
+      }
+      return `P${fallbackIndex}`;
+    }
+
+    function parseNumberCandidates(value) {
+      if (typeof value === "number") {
+        return Number.isFinite(value) ? [value] : [];
+      }
+
+      const raw = String(value || "").trim();
+      if (!raw) {
+        return [];
+      }
+
+      const compact = raw.replace(/\s+/g, "");
+      const variants = new Set();
+
+      variants.add(compact);
+      variants.add(compact.replace(/,/g, ""));
+      variants.add(compact.replace(/\./g, ""));
+
+      if (compact.includes(",") && !compact.includes(".")) {
+        variants.add(compact.replace(",", "."));
+      }
+      if (compact.includes(",") && compact.includes(".")) {
+        variants.add(compact.replace(/\./g, "").replace(",", "."));
+      }
+
+      const numbers = [];
+      variants.forEach((variant) => {
+        const num = Number(variant);
+        if (Number.isFinite(num)) {
+          numbers.push(num);
+        }
+      });
+
+      return numbers;
+    }
+
+    function pickCoordinateValue(value, min, max) {
+      const candidates = parseNumberCandidates(value);
+      if (!candidates.length) {
+        return NaN;
+      }
+      const inRange = candidates.find((n) => n >= min && n <= max);
+      if (Number.isFinite(inRange)) {
+        return inRange;
+      }
+      return candidates[0];
+    }
+
+    function utm18SToLatLon(easting, northing) {
+      const zone = 18;
+      const isSouthernHemisphere = true;
+
+      const a = 6378137;
+      const f = 1 / 298.257223563;
+      const k0 = 0.9996;
+      const e = Math.sqrt(f * (2 - f));
+      const e2 = e * e;
+      const ePrimeSq = e2 / (1 - e2);
+
+      let x = easting - 500000;
+      let y = northing;
+
+      if (isSouthernHemisphere) {
+        y -= 10000000;
+      }
+
+      const m = y / k0;
+      const mu = m / (a * (1 - e2 / 4 - (3 * e2 * e2) / 64 - (5 * e2 * e2 * e2) / 256));
+
+      const e1 = (1 - Math.sqrt(1 - e2)) / (1 + Math.sqrt(1 - e2));
+
+      const j1 = (3 * e1) / 2 - (27 * Math.pow(e1, 3)) / 32;
+      const j2 = (21 * e1 * e1) / 16 - (55 * Math.pow(e1, 4)) / 32;
+      const j3 = (151 * Math.pow(e1, 3)) / 96;
+      const j4 = (1097 * Math.pow(e1, 4)) / 512;
+
+      const fp = mu + j1 * Math.sin(2 * mu) + j2 * Math.sin(4 * mu) + j3 * Math.sin(6 * mu) + j4 * Math.sin(8 * mu);
+
+      const sinFp = Math.sin(fp);
+      const cosFp = Math.cos(fp);
+      const tanFp = Math.tan(fp);
+
+      const c1 = ePrimeSq * cosFp * cosFp;
+      const t1 = tanFp * tanFp;
+      const n1 = a / Math.sqrt(1 - e2 * sinFp * sinFp);
+      const r1 = (a * (1 - e2)) / Math.pow(1 - e2 * sinFp * sinFp, 1.5);
+      const d = x / (n1 * k0);
+
+      const q1 = d * d / 2;
+      const q2 = (5 + 3 * t1 + 10 * c1 - 4 * c1 * c1 - 9 * ePrimeSq) * Math.pow(d, 4) / 24;
+      const q3 = (61 + 90 * t1 + 298 * c1 + 45 * t1 * t1 - 252 * ePrimeSq - 3 * c1 * c1) * Math.pow(d, 6) / 720;
+      const lat = fp - (n1 * tanFp / r1) * (q1 - q2 + q3);
+
+      const q4 = d;
+      const q5 = (1 + 2 * t1 + c1) * Math.pow(d, 3) / 6;
+      const q6 = (5 - 2 * c1 + 28 * t1 - 3 * c1 * c1 + 8 * ePrimeSq + 24 * t1 * t1) * Math.pow(d, 5) / 120;
+      const lonOrigin = ((zone - 1) * 6 - 180 + 3) * (Math.PI / 180);
+      const lon = lonOrigin + (q4 - q5 + q6) / cosFp;
+
+      return {
+        lat: lat * (180 / Math.PI),
+        lon: lon * (180 / Math.PI)
+      };
+    }
+
+    function escapeXml(value) {
+      return String(value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/\"/g, "&quot;")
+        .replace(/'/g, "&apos;");
+    }
+
+    function toFixedSafe(value, decimals) {
+      return Number(value).toFixed(decimals);
+    }
+
+    function downloadBlob(blob, filename) {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    function csvToRows(text) {
+      const lines = text.split(/\r?\n/).filter((line) => line.trim() !== "");
+      if (!lines.length) {
+        return [];
+      }
+      const sample = lines[0];
+      const delimiter = sample.includes(";") ? ";" : sample.includes("\t") ? "\t" : ",";
+
+      return lines.map((line) => parseCsvLine(line, delimiter));
+    }
+
+    function parseCsvLine(line, delimiter) {
+      const result = [];
+      let current = "";
+      let quoted = false;
+
+      for (let i = 0; i < line.length; i += 1) {
+        const ch = line[i];
+
+        if (ch === "\"") {
+          const next = line[i + 1];
+          if (quoted && next === "\"") {
+            current += "\"";
+            i += 1;
+          } else {
+            quoted = !quoted;
+          }
+          continue;
+        }
+
+        if (ch === delimiter && !quoted) {
+          result.push(current);
+          current = "";
+          continue;
+        }
+
+        current += ch;
+      }
+
+      result.push(current);
+      return result;
+    }
+
+    async function fileToRows(file) {
+      const name = file.name.toLowerCase();
+      if (name.endsWith(".csv") || name.endsWith(".txt")) {
+        const text = await file.text();
+        return csvToRows(text);
+      }
+
+      if (typeof XLSX === "undefined") {
+        throw new Error("No se pudo cargar la libreria para Excel. Usa CSV o revisa tu conexion a internet.");
+      }
+
+      const data = await file.arrayBuffer();
+      const wb = XLSX.read(data, { type: "array" });
+      const firstSheet = wb.SheetNames[0];
+      if (!firstSheet) {
+        return [];
+      }
+      const ws = wb.Sheets[firstSheet];
+      return XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" });
+    }
+
+    function detectColumns(headerRow) {
+      const normalized = headerRow.map((h) => normalizeHeader(h));
+      function findIndex(group) {
+        const aliases = REQUIRED[group].map((a) => normalizeHeader(a));
+        return normalized.findIndex((name) => aliases.includes(name));
+      }
+      return {
+        punto: findIndex("punto"),
+        zona: findIndex("zona"),
+        este: findIndex("este"),
+        norte: findIndex("norte")
+      };
+    }
+
+    function processRows(rows) {
+      const warnings = [];
+      if (!rows.length) {
+        return { records: [], warnings: ["El archivo no tiene contenido."] };
+      }
+
+      const headerRow = rows[0].map((v) => String(v || "").trim());
+      const cols = detectColumns(headerRow);
+
+      if (cols.punto < 0 || cols.este < 0 || cols.norte < 0) {
+        return {
+          records: [],
+          warnings: [
+            "Faltan columnas obligatorias. Se requiere al menos: PUNTO, COORDENADA_ESTE y COORDENADAS_NORTE.",
+            "Sugerido: incluir tambien ZONA_UTM (18S)."
+          ]
+        };
+      }
+
+      const records = [];
+
+      for (let i = 1; i < rows.length; i += 1) {
+        const row = rows[i];
+        const visualRow = i + 1;
+
+        if (!row || row.every((value) => String(value || "").trim() === "")) {
+          continue;
+        }
+
+        const punto = sanitizePointName(row[cols.punto], i);
+        const zoneRaw = cols.zona >= 0 ? row[cols.zona] : "18S";
+        const zone = normalizeZone(zoneRaw);
+
+        if (!zone) {
+          warnings.push(`Fila ${visualRow}: zona UTM invalida (${zoneRaw}). Debe ser 18S.`);
+          continue;
+        }
+
+        if (zone !== "18S") {
+          warnings.push(`Fila ${visualRow}: zona ${zone} no soportada. Este conversor usa solo 18S.`);
+          continue;
+        }
+
+        const este = pickCoordinateValue(row[cols.este], 100000, 900000);
+        const norte = pickCoordinateValue(row[cols.norte], 0, 10000000);
+
+        if (!Number.isFinite(este) || !Number.isFinite(norte)) {
+          warnings.push(`Fila ${visualRow}: coordenadas invalidas (Este='${row[cols.este]}', Norte='${row[cols.norte]}').`);
+          continue;
+        }
+
+        if (este < 100000 || este > 900000 || norte < 0 || norte > 10000000) {
+          warnings.push(`Fila ${visualRow}: coordenadas fuera de rango UTM (${este}, ${norte}).`);
+          continue;
+        }
+
+        const geo = utm18SToLatLon(este, norte);
+
+        records.push({
+          index: records.length + 1,
+          punto,
+          zona: "18S",
+          este,
+          norte,
+          lat: geo.lat,
+          lon: geo.lon
+        });
+      }
+
+      if (!records.length && !warnings.length) {
+        warnings.push("No se encontraron registros validos para procesar.");
+      }
+
+      return { records, warnings };
+    }
+
+    function renderWarnings(list) {
+      if (!list.length) {
+        el.warnings.style.display = "none";
+        el.warnings.textContent = "";
+        return;
+      }
+      el.warnings.style.display = "block";
+      el.warnings.innerHTML = list.map((msg) => `- ${escapeXml(msg)}`).join("<br>");
+    }
+
+    function renderPreview(records) {
+      if (!records.length) {
+        el.previewBody.innerHTML = "<tr><td colspan='7'>Sin datos para mostrar.</td></tr>";
+        return;
+      }
+
+      const rowsHtml = records
+        .slice(0, 500)
+        .map((r) => {
+          return `<tr>
+            <td>${r.index}</td>
+            <td>${escapeXml(r.punto)}</td>
+            <td>${r.zona}</td>
+            <td>${toFixedSafe(r.este, 3)}</td>
+            <td>${toFixedSafe(r.norte, 3)}</td>
+            <td>${toFixedSafe(r.lat, 7)}</td>
+            <td>${toFixedSafe(r.lon, 7)}</td>
+          </tr>`;
+        })
+        .join("");
+
+      el.previewBody.innerHTML = rowsHtml;
+    }
+
+    function updateButtons() {
+      const hasData = state.records.length > 0;
+      el.btnKml.disabled = !hasData;
+      el.btnShp.disabled = !hasData;
+      el.btnPack.disabled = !hasData;
+    }
+
+    function onSelectFile(event) {
+      state.file = event.target.files && event.target.files[0] ? event.target.files[0] : null;
+      state.records = [];
+      state.warnings = [];
+      updateButtons();
+
+      if (!state.file) {
+        el.fileMeta.textContent = "Aun no hay archivo cargado.";
+        el.summary.textContent = "Sin registros procesados.";
+        renderWarnings([]);
+        renderPreview([]);
+        el.btnProcess.disabled = true;
+        return;
+      }
+
+      el.fileMeta.textContent = `Archivo cargado: ${state.file.name} (${(state.file.size / 1024).toFixed(1)} KB)`;
+      el.summary.textContent = "Archivo listo para procesar.";
+      el.btnProcess.disabled = false;
+    }
+
+    async function onProcess() {
+      if (!state.file) {
+        return;
+      }
+
+      el.btnProcess.disabled = true;
+      el.summary.textContent = "Procesando archivo...";
+
+      try {
+        const rows = await fileToRows(state.file);
+        const result = processRows(rows);
+        state.records = result.records;
+        state.warnings = result.warnings;
+
+        renderWarnings(state.warnings);
+        renderPreview(state.records);
+        updateButtons();
+
+        el.summary.textContent = `Registros validos: ${state.records.length}. Registros con observaciones: ${state.warnings.length}.`;
+      } catch (error) {
+        state.records = [];
+        state.warnings = [error.message || "No se pudo procesar el archivo."];
+        renderWarnings(state.warnings);
+        renderPreview([]);
+        updateButtons();
+        el.summary.textContent = "Ocurrio un error durante el procesamiento.";
+      } finally {
+        el.btnProcess.disabled = false;
+      }
+    }
+
+    function buildKml(records) {
+      const placemarks = records
+        .map((r) => {
+          const description = `Zona UTM: ${r.zona} | Este: ${toFixedSafe(r.este, 3)} | Norte: ${toFixedSafe(r.norte, 3)}`;
+          return `
+            <Placemark>
+              <name>${escapeXml(r.punto)}</name>
+              <description>${escapeXml(description)}</description>
+              <Point><coordinates>${toFixedSafe(r.lon, 8)},${toFixedSafe(r.lat, 8)},0</coordinates></Point>
+            </Placemark>`;
+        })
+        .join("\n");
+
+      return `<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>puntos_utm18s</name>
+    ${placemarks}
+  </Document>
+</kml>`;
+    }
+
+    function downloadKml() {
+      if (!state.records.length) {
+        return;
+      }
+      const kml = buildKml(state.records);
+      const blob = new Blob([kml], { type: "application/vnd.google-earth.kml+xml;charset=utf-8" });
+      downloadBlob(blob, "puntos_utm18s.kml");
+    }
+
+    function encodeAscii(text, length) {
+      const out = new Uint8Array(length);
+      const clean = String(text || "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^\x20-\x7E]/g, " ")
+        .slice(0, length);
+
+      for (let i = 0; i < clean.length; i += 1) {
+        out[i] = clean.charCodeAt(i);
+      }
+
+      return out;
+    }
+
+    function createShpHeader(view, fileLengthWords, shapeType, bbox) {
+      view.setInt32(0, 9994, false);
+      for (let i = 4; i <= 20; i += 4) {
+        view.setInt32(i, 0, false);
+      }
+      view.setInt32(24, fileLengthWords, false);
+      view.setInt32(28, 1000, true);
+      view.setInt32(32, shapeType, true);
+      view.setFloat64(36, bbox.minX, true);
+      view.setFloat64(44, bbox.minY, true);
+      view.setFloat64(52, bbox.maxX, true);
+      view.setFloat64(60, bbox.maxY, true);
+      view.setFloat64(68, 0, true);
+      view.setFloat64(76, 0, true);
+      view.setFloat64(84, 0, true);
+      view.setFloat64(92, 0, true);
+    }
+
+    function getBbox(points) {
+      let minX = Infinity;
+      let minY = Infinity;
+      let maxX = -Infinity;
+      let maxY = -Infinity;
+
+      points.forEach((p) => {
+        if (p.x < minX) minX = p.x;
+        if (p.y < minY) minY = p.y;
+        if (p.x > maxX) maxX = p.x;
+        if (p.y > maxY) maxY = p.y;
+      });
+
+      return { minX, minY, maxX, maxY };
+    }
+
+    function buildPointShp(points) {
+      const recordSize = 28;
+      const size = 100 + points.length * recordSize;
+      const buffer = new ArrayBuffer(size);
+      const view = new DataView(buffer);
+      const bbox = getBbox(points);
+
+      createShpHeader(view, size / 2, 1, bbox);
+
+      let offset = 100;
+      points.forEach((p, idx) => {
+        view.setInt32(offset, idx + 1, false);
+        view.setInt32(offset + 4, 10, false);
+        view.setInt32(offset + 8, 1, true);
+        view.setFloat64(offset + 12, p.x, true);
+        view.setFloat64(offset + 20, p.y, true);
+        offset += recordSize;
+      });
+
+      return new Uint8Array(buffer);
+    }
+
+    function buildPointShx(points) {
+      const size = 100 + points.length * 8;
+      const buffer = new ArrayBuffer(size);
+      const view = new DataView(buffer);
+      const bbox = getBbox(points);
+
+      createShpHeader(view, size / 2, 1, bbox);
+
+      let offset = 100;
+      let shpOffsetWords = 50;
+      points.forEach(() => {
+        view.setInt32(offset, shpOffsetWords, false);
+        view.setInt32(offset + 4, 10, false);
+        offset += 8;
+        shpOffsetWords += 14;
+      });
+
+      return new Uint8Array(buffer);
+    }
+
+    function formatNumberForDbf(value, length, decimals) {
+      if (!Number.isFinite(value)) {
+        return "".padStart(length, " ");
+      }
+      const text = Number(value).toFixed(decimals);
+      if (text.length > length) {
+        return "".padStart(length, " ");
+      }
+      return text.padStart(length, " ");
+    }
+
+    function formatTextForDbf(value, length) {
+      const clean = String(value || "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^\x20-\x7E]/g, " ")
+        .trim();
+
+      if (!clean) {
+        return "".padEnd(length, " ");
+      }
+      return clean.slice(0, length).padEnd(length, " ");
+    }
+
+    function buildDbfFromRows(fieldsDef, rows) {
+      const safeRows = Array.isArray(rows) ? rows : [];
+      const fields = [
+        ...fieldsDef
+      ];
+
+      const recordLength = 1 + fields.reduce((sum, f) => sum + f.length, 0);
+      const headerLength = 32 + fields.length * 32 + 1;
+      const totalLength = headerLength + safeRows.length * recordLength + 1;
+      const buffer = new ArrayBuffer(totalLength);
+      const u8 = new Uint8Array(buffer);
+      const view = new DataView(buffer);
+
+      const now = new Date();
+      u8[0] = 0x03;
+      u8[1] = now.getFullYear() - 1900;
+      u8[2] = now.getMonth() + 1;
+      u8[3] = now.getDate();
+
+      view.setUint32(4, safeRows.length, true);
+      view.setUint16(8, headerLength, true);
+      view.setUint16(10, recordLength, true);
+
+      let fieldOffset = 32;
+      fields.forEach((field) => {
+        const nameBytes = encodeAscii(field.name, 11);
+        u8.set(nameBytes, fieldOffset);
+        u8[fieldOffset + 11] = field.type.charCodeAt(0);
+        u8[fieldOffset + 16] = field.length;
+        u8[fieldOffset + 17] = field.decimals;
+        fieldOffset += 32;
+      });
+
+      u8[fieldOffset] = 0x0d;
+
+      let recordOffset = headerLength;
+      safeRows.forEach((record) => {
+        u8[recordOffset] = 0x20;
+        let cursor = recordOffset + 1;
+
+        fields.forEach((field) => {
+          const raw = record[field.name];
+          let text;
+          if (field.type === "N") {
+            const num = raw === null || raw === undefined || raw === "" ? NaN : Number(raw);
+            text = formatNumberForDbf(num, field.length, field.decimals || 0);
+          } else {
+            text = formatTextForDbf(raw, field.length);
+          }
+          const bytes = encodeAscii(text, text.length);
+          u8.set(bytes, cursor);
+          cursor += text.length;
+        });
+
+        recordOffset += recordLength;
+      });
+
+      u8[totalLength - 1] = 0x1a;
+      return new Uint8Array(buffer);
+    }
+
+    function buildPointDbf(records) {
+      const fields = [
+        { name: "PUNTO", type: "C", length: 40, decimals: 0 },
+        { name: "ZONA_UTM", type: "C", length: 8, decimals: 0 },
+        { name: "ESTE", type: "N", length: 14, decimals: 3 },
+        { name: "NORTE", type: "N", length: 14, decimals: 3 },
+        { name: "LAT", type: "N", length: 14, decimals: 8 },
+        { name: "LON", type: "N", length: 14, decimals: 8 }
+      ];
+
+      const rows = records.map((record) => ({
+        PUNTO: record.punto,
+        ZONA_UTM: record.zona,
+        ESTE: record.este,
+        NORTE: record.norte,
+        LAT: record.lat,
+        LON: record.lon
+      }));
+
+      return buildDbfFromRows(fields, rows);
+    }
+
+    function buildSernanpDbf(pointCount, bufferMeters) {
+      const fields = [
+        { name: "ID", type: "N", length: 6, decimals: 0 },
+        { name: "TIPO", type: "C", length: 20, decimals: 0 },
+        { name: "N_PUNTOS", type: "N", length: 10, decimals: 0 },
+        { name: "BUFFER_M", type: "N", length: 10, decimals: 2 }
+      ];
+
+      const rows = [
+        {
+          ID: 1,
+          TIPO: "BUFFER_20M",
+          N_PUNTOS: pointCount,
+          BUFFER_M: bufferMeters
+        }
+      ];
+
+      return buildDbfFromRows(fields, rows);
+    }
+
+    function buildPrj() {
+      return `PROJCS["WGS_1984_UTM_Zone_18S",GEOGCS["GCS_WGS_1984",DATUM["D_WGS_1984",SPHEROID["WGS_1984",6378137,298.257223563]],PRIMEM["Greenwich",0],UNIT["Degree",0.0174532925199433]],PROJECTION["Transverse_Mercator"],PARAMETER["False_Easting",500000],PARAMETER["False_Northing",10000000],PARAMETER["Central_Meridian",-75],PARAMETER["Scale_Factor",0.9996],PARAMETER["Latitude_Of_Origin",0],UNIT["Meter",1]]`;
+    }
+
+    function buildPointShapefileParts(records) {
+      const points = records.map((r) => ({ x: r.este, y: r.norte }));
+      const shp = buildPointShp(points);
+      const shx = buildPointShx(points);
+      const dbf = buildPointDbf(records);
+      const prj = buildPrj();
+      const cpg = "UTF-8";
+
+      return { shp, shx, dbf, prj, cpg };
+    }
+
+    function buildCircleRingClockwise(centerX, centerY, radius, segments) {
+      const ring = [];
+      for (let i = segments; i >= 0; i -= 1) {
+        const angle = (i / segments) * Math.PI * 2;
+        ring.push({
+          x: centerX + radius * Math.cos(angle),
+          y: centerY + radius * Math.sin(angle)
+        });
+      }
+      return ring;
+    }
+
+    function buildBufferMultipartGeometry(records, bufferMeters, segments) {
+      const parts = [];
+      const points = [];
+
+      records.forEach((record) => {
+        const ring = buildCircleRingClockwise(record.este, record.norte, bufferMeters, segments);
+        parts.push(points.length);
+        ring.forEach((point) => points.push(point));
+      });
+
+      return {
+        parts,
+        points,
+        bbox: getBbox(points)
+      };
+    }
+
+    function buildPolygonSingleRecordShp(geometry) {
+      const numParts = geometry.parts.length;
+      const numPoints = geometry.points.length;
+      const contentBytes = 44 + numParts * 4 + numPoints * 16;
+      const size = 100 + 8 + contentBytes;
+      const buffer = new ArrayBuffer(size);
+      const view = new DataView(buffer);
+
+      createShpHeader(view, size / 2, 5, geometry.bbox);
+
+      let offset = 100;
+      view.setInt32(offset, 1, false);
+      view.setInt32(offset + 4, contentBytes / 2, false);
+      offset += 8;
+
+      view.setInt32(offset, 5, true);
+      offset += 4;
+
+      view.setFloat64(offset, geometry.bbox.minX, true);
+      view.setFloat64(offset + 8, geometry.bbox.minY, true);
+      view.setFloat64(offset + 16, geometry.bbox.maxX, true);
+      view.setFloat64(offset + 24, geometry.bbox.maxY, true);
+      offset += 32;
+
+      view.setInt32(offset, numParts, true);
+      view.setInt32(offset + 4, numPoints, true);
+      offset += 8;
+
+      geometry.parts.forEach((partIndex) => {
+        view.setInt32(offset, partIndex, true);
+        offset += 4;
+      });
+
+      geometry.points.forEach((point) => {
+        view.setFloat64(offset, point.x, true);
+        view.setFloat64(offset + 8, point.y, true);
+        offset += 16;
+      });
+
+      return new Uint8Array(buffer);
+    }
+
+    function buildPolygonSingleRecordShx(geometry) {
+      const numParts = geometry.parts.length;
+      const numPoints = geometry.points.length;
+      const contentBytes = 44 + numParts * 4 + numPoints * 16;
+      const size = 108;
+      const buffer = new ArrayBuffer(size);
+      const view = new DataView(buffer);
+
+      createShpHeader(view, size / 2, 5, geometry.bbox);
+      view.setInt32(100, 50, false);
+      view.setInt32(104, contentBytes / 2, false);
+
+      return new Uint8Array(buffer);
+    }
+
+    function buildSernanpPolygonShapefileParts(records, bufferMeters = 20, segments = 40) {
+      const geometry = buildBufferMultipartGeometry(records, bufferMeters, segments);
+      const shp = buildPolygonSingleRecordShp(geometry);
+      const shx = buildPolygonSingleRecordShx(geometry);
+      const dbf = buildSernanpDbf(records.length, bufferMeters);
+      const prj = buildPrj();
+      const cpg = "UTF-8";
+
+      return { shp, shx, dbf, prj, cpg };
+    }
+
+    function buildPlatformArtifacts(records) {
+      const pointParts = buildPointShapefileParts(records);
+      const sernanpParts = buildSernanpPolygonShapefileParts(records, 20, 40);
+      const kmlText = buildKml(records);
+      const sisforArray = buildSisforWorkbook(records);
+
+      return {
+        pointParts,
+        sernanpParts,
+        kmlText,
+        sisforArray
+      };
+    }
+
+    function triggerDownload(filename, content, mimeType = "application/octet-stream") {
+      const blob = new Blob([content], { type: mimeType });
+      downloadBlob(blob, filename);
+    }
+
+    async function buildShapefileZipArray(parts, baseName) {
+      if (typeof JSZip === "undefined") {
+        throw new Error("No se pudo cargar JSZip para crear ZIP.");
+      }
+
+      const zip = new JSZip();
+      zip.file(`${baseName}.shp`, parts.shp);
+      zip.file(`${baseName}.shx`, parts.shx);
+      zip.file(`${baseName}.dbf`, parts.dbf);
+      zip.file(`${baseName}.prj`, parts.prj);
+      zip.file(`${baseName}.cpg`, parts.cpg);
+
+      return zip.generateAsync({ type: "uint8array" });
+    }
+
+    async function downloadShapefileZipFile(parts, baseName) {
+      const zipArray = await buildShapefileZipArray(parts, baseName);
+      triggerDownload(`${baseName}.zip`, zipArray, "application/zip");
+    }
+
+    async function writeFileInDirectory(dirHandle, filename, content, mimeType = "application/octet-stream") {
+      const fileHandle = await dirHandle.getFileHandle(filename, { create: true });
+      const writable = await fileHandle.createWritable();
+      const blob = new Blob([content], { type: mimeType });
+      await writable.write(blob);
+      await writable.close();
+    }
+
+    async function writeShapefileZipInDirectory(dirHandle, baseName, parts) {
+      const zipArray = await buildShapefileZipArray(parts, baseName);
+      await writeFileInDirectory(dirHandle, `${baseName}.zip`, zipArray, "application/zip");
+    }
+
+    async function downloadShapefileZip() {
+      if (!state.records.length) {
+        return;
+      }
+
+      try {
+        const parts = buildPointShapefileParts(state.records);
+        await downloadShapefileZipFile(parts, "puntos_utm18s");
+        el.summary.textContent = "Shapefile exportado en ZIP.";
+      } catch (error) {
+        const msg = error && error.message ? error.message : "No se pudo crear el shapefile ZIP.";
+        renderWarnings([...state.warnings, msg]);
+      }
+    }
+
+    function buildSisforWorkbook(records) {
+      if (typeof XLSX === "undefined") {
+        throw new Error("No se pudo cargar la libreria XLSX para generar el archivo de SISFOR.");
+      }
+
+      const rows = [
+        ["PUNTO", "ZONA_UTM", "COORDENADA_ESTE", "COORDENADAS_NORTE"],
+        ...records.map((record) => [record.punto, record.zona, record.este, record.norte])
+      ];
+
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.aoa_to_sheet(rows);
+      ws["!autofilter"] = { ref: "A1:D1" };
+      ws["!cols"] = [{ wch: 16 }, { wch: 13 }, { wch: 18 }, { wch: 20 }];
+      XLSX.utils.book_append_sheet(wb, ws, "COORDENADAS");
+
+      return XLSX.write(wb, { bookType: "xlsx", type: "array" });
+    }
+
+    async function downloadPlatformPackage() {
+      if (!state.records.length) {
+        return;
+      }
+
+      el.btnPack.disabled = true;
+      el.summary.textContent = "Exportando plataformas (ZIP por shapefile)...";
+
+      try {
+        const data = buildPlatformArtifacts(state.records);
+
+        if (typeof window.showDirectoryPicker === "function") {
+          const selectedDir = await window.showDirectoryPicker();
+          const root = await selectedDir.getDirectoryHandle("PLATAFORMAS_UTM18S", { create: true });
+
+          const geoserforDir = await root.getDirectoryHandle("GEOSERFOR", { create: true });
+          await writeShapefileZipInDirectory(geoserforDir, "geoserfor_puntos_utm18s", data.pointParts);
+          await writeFileInDirectory(geoserforDir, "geoserfor_puntos_utm18s.kml", data.kmlText, "application/vnd.google-earth.kml+xml;charset=utf-8");
+
+          const sisforDir = await root.getDirectoryHandle("SISFOR", { create: true });
+          await writeFileInDirectory(sisforDir, "sisfor_coordenadas_utm18s.xlsx", data.sisforArray, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+
+          const sernanpDir = await root.getDirectoryHandle("SERNANP", { create: true });
+          await writeShapefileZipInDirectory(sernanpDir, "sernanp_buffer20m_una_fila", data.sernanpParts);
+
+          const sigridDir = await root.getDirectoryHandle("SIGRID", { create: true });
+          await writeShapefileZipInDirectory(sigridDir, "sigrid_puntos_utm18s", data.pointParts);
+          await writeFileInDirectory(sigridDir, "sigrid_puntos_utm18s.kml", data.kmlText, "application/vnd.google-earth.kml+xml;charset=utf-8");
+
+          const sigdaDir = await root.getDirectoryHandle("SIGDA", { create: true });
+          await writeShapefileZipInDirectory(sigdaDir, "sigda_puntos_utm18s", data.pointParts);
+
+          const sicarDir = await root.getDirectoryHandle("SICAR", { create: true });
+          await writeShapefileZipInDirectory(sicarDir, "sicar_puntos_utm18s", data.pointParts);
+          await writeFileInDirectory(sicarDir, "sicar_puntos_utm18s.kml", data.kmlText, "application/vnd.google-earth.kml+xml;charset=utf-8");
+
+          el.summary.textContent = "Exportado en PLATAFORMAS_UTM18S con GEOSERFOR, SISFOR, SERNANP, SIGRID, SIGDA y SICAR.";
+          return;
+        }
+
+        await downloadShapefileZipFile(data.pointParts, "geoserfor_puntos_utm18s");
+        triggerDownload("geoserfor_puntos_utm18s.kml", data.kmlText, "application/vnd.google-earth.kml+xml;charset=utf-8");
+
+        triggerDownload("sisfor_coordenadas_utm18s.xlsx", data.sisforArray, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+
+        await downloadShapefileZipFile(data.sernanpParts, "sernanp_buffer20m_una_fila");
+
+        await downloadShapefileZipFile(data.pointParts, "sigrid_puntos_utm18s");
+        triggerDownload("sigrid_puntos_utm18s.kml", data.kmlText, "application/vnd.google-earth.kml+xml;charset=utf-8");
+
+        await downloadShapefileZipFile(data.pointParts, "sigda_puntos_utm18s");
+
+        await downloadShapefileZipFile(data.pointParts, "sicar_puntos_utm18s");
+        triggerDownload("sicar_puntos_utm18s.kml", data.kmlText, "application/vnd.google-earth.kml+xml;charset=utf-8");
+
+        el.summary.textContent = "Exportado en multiples descargas con GEOSERFOR, SISFOR, SERNANP, SIGRID, SIGDA y SICAR.";
+      } catch (error) {
+        if (error && error.name === "AbortError") {
+          el.summary.textContent = "Exportacion cancelada por el usuario.";
+          return;
+        }
+        const msg = error && error.message ? error.message : "No se pudo generar el paquete de plataformas.";
+        renderWarnings([...state.warnings, msg]);
+        el.summary.textContent = "Ocurrio un error durante la exportacion.";
+      } finally {
+        updateButtons();
+      }
+    }
+
+    function downloadTemplate() {
+      const rows = [
+        ["PUNTO", "ZONA_UTM", "COORDENADA_ESTE", "COORDENADAS_NORTE"],
+        ["P1", "18S", 500000, 9000000],
+        ["P2", "18S", 499850.5, 8999900.25]
+      ];
+
+      if (typeof XLSX !== "undefined") {
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.aoa_to_sheet(rows);
+        XLSX.utils.book_append_sheet(wb, ws, "PLANTILLA");
+        const out = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+        const blob = new Blob([out], {
+          type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        });
+        downloadBlob(blob, "plantilla_utm18s_sigda.xlsx");
+      } else {
+        const csv = rows.map((r) => r.join(",")).join("\n");
+        const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+        downloadBlob(blob, "plantilla_utm18s_sigda.csv");
+      }
+    }
+  </script>
+</body>
+</html>
