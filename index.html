@@ -150,6 +150,16 @@
       min-height: 40px;
     }
 
+    .file-label select {
+      border: 1px solid #b7cfa8;
+      border-radius: 8px;
+      padding: 6px 8px;
+      font-family: inherit;
+      color: #1f2e1b;
+      background: #ffffff;
+      min-width: 88px;
+    }
+
     input[type="file"] {
       display: none;
     }
@@ -253,7 +263,7 @@
       <h1>CONVERSOR DE CORDENADAS</h1>
       <p>
         
-        El sistema valida datos UTM WGS84 zona 18S y permite descargar formatos para GEOSERFOR, SISFOR, SERNANP, SIGRID, SIGDA y SICAR.
+        El sistema valida datos UTM WGS84 segun la zona seleccionada y permite descargar formatos para GEOSERFOR, SISFOR, SERNANP, SIGRID, SIGDA y SICAR.
       </p>
     </section>
 
@@ -269,6 +279,19 @@
           </label>
 
           <button id="btnProcess" class="btn btn-primary" type="button" disabled>Procesar archivo</button>
+        </div>
+        <div class="actions">
+          <label class="file-label" for="zoneNumber">
+            Zona UTM
+            <select id="zoneNumber"></select>
+          </label>
+          <label class="file-label" for="hemisphereSelect">
+            Hemisferio
+            <select id="hemisphereSelect">
+              <option value="S" selected>Sur (S)</option>
+              <option value="N">Norte (N)</option>
+            </select>
+          </label>
         </div>
         <p class="hint">Se toma la primera hoja del Excel y se omiten filas vacias.</p>
         <div id="fileMeta" class="meta">Aun no hay archivo cargado.</div>
@@ -318,7 +341,9 @@
     const state = {
       file: null,
       records: [],
-      warnings: []
+      warnings: [],
+      zoneNumber: 18,
+      hemisphere: "S"
     };
 
     const REQUIRED = {
@@ -335,6 +360,8 @@
       btnKml: document.getElementById("btnKml"),
       btnShp: document.getElementById("btnShp"),
       btnPack: document.getElementById("btnPack"),
+      zoneNumber: document.getElementById("zoneNumber"),
+      hemisphereSelect: document.getElementById("hemisphereSelect"),
       fileMeta: document.getElementById("fileMeta"),
       summary: document.getElementById("summary"),
       warnings: document.getElementById("warnings"),
@@ -347,6 +374,7 @@
     el.btnShp.addEventListener("click", downloadShapefileZip);
     el.btnPack.addEventListener("click", downloadPlatformPackage);
     el.btnTemplate.addEventListener("click", downloadTemplate);
+    initZoneControls();
 
     function normalizeHeader(value) {
       return String(value || "")
@@ -358,24 +386,66 @@
         .replace(/^_+|_+$/g, "");
     }
 
-    function normalizeZone(value) {
-      const text = String(value || "").trim().toUpperCase().replace(/\s+/g, "");
-      if (!text) {
-        return "18S";
+    function initZoneControls() {
+      if (!el.zoneNumber) {
+        return;
       }
-      const match = text.match(/^(\d{1,2})([NS])$/);
-      if (!match) {
-        return null;
+
+      const frag = document.createDocumentFragment();
+      for (let zone = 1; zone <= 60; zone += 1) {
+        const option = document.createElement("option");
+        option.value = String(zone);
+        option.textContent = String(zone);
+        if (zone === state.zoneNumber) {
+          option.selected = true;
+        }
+        frag.appendChild(option);
       }
-      return `${parseInt(match[1], 10)}${match[2]}`;
+      el.zoneNumber.appendChild(frag);
+      el.hemisphereSelect.value = state.hemisphere;
     }
 
-    function sanitizePointName(value, fallbackIndex) {
-      const raw = String(value || "").trim();
-      if (raw) {
-        return raw;
+    function getSelectedZoneConfig() {
+      const zoneNumber = Number(el.zoneNumber.value);
+      const hemisphere = String(el.hemisphereSelect.value || "S").toUpperCase() === "N" ? "N" : "S";
+
+      if (!Number.isInteger(zoneNumber) || zoneNumber < 1 || zoneNumber > 60) {
+        throw new Error("Selecciona una zona UTM valida entre 1 y 60.");
       }
-      return `P${fallbackIndex}`;
+
+      return {
+        zoneNumber,
+        hemisphere,
+        zoneText: `${zoneNumber}${hemisphere}`
+      };
+    }
+
+    function normalizeZone(value, fallbackHemisphere = "S") {
+      const text = String(value || "").trim().toUpperCase().replace(/\s+/g, "");
+      if (!text) {
+        return null;
+      }
+      let match = text.match(/^(\d{1,2})([NS])$/);
+      if (match) {
+        const zoneNumber = parseInt(match[1], 10);
+        if (zoneNumber >= 1 && zoneNumber <= 60) {
+          return `${zoneNumber}${match[2]}`;
+        }
+        return null;
+      }
+      match = text.match(/^(\d{1,2})$/);
+      if (match) {
+        const zoneNumber = parseInt(match[1], 10);
+        if (zoneNumber >= 1 && zoneNumber <= 60) {
+          const hemi = fallbackHemisphere === "N" ? "N" : "S";
+          return `${zoneNumber}${hemi}`;
+        }
+      }
+      return null;
+    }
+
+    function sanitizePointName(value) {
+      return String(value || "").trim();
     }
 
     function parseNumberCandidates(value) {
@@ -425,10 +495,8 @@
       return candidates[0];
     }
 
-    function utm18SToLatLon(easting, northing) {
-      const zone = 18;
-      const isSouthernHemisphere = true;
-
+    function utmToLatLon(easting, northing, zone, hemisphere) {
+      const isSouthernHemisphere = hemisphere === "S";
       const a = 6378137;
       const f = 1 / 298.257223563;
       const k0 = 0.9996;
@@ -493,6 +561,18 @@
 
     function toFixedSafe(value, decimals) {
       return Number(value).toFixed(decimals);
+    }
+
+    function getZoneText() {
+      return `${state.zoneNumber}${state.hemisphere}`;
+    }
+
+    function getZoneSlug() {
+      return `utm${state.zoneNumber}${String(state.hemisphere || "S").toLowerCase()}`;
+    }
+
+    function stripZoneHemisphere(zoneText) {
+      return String(zoneText || "").trim().toUpperCase().replace(/[NS]$/, "");
     }
 
     function downloadBlob(blob, filename) {
@@ -584,11 +664,12 @@
       };
     }
 
-    function processRows(rows) {
+    function processRows(rows, zoneConfig) {
       const warnings = [];
       if (!rows.length) {
         return { records: [], warnings: ["El archivo no tiene contenido."] };
       }
+      const selectedZone = zoneConfig.zoneText;
 
       const headerRow = rows[0].map((v) => String(v || "").trim());
       const cols = detectColumns(headerRow);
@@ -598,12 +679,13 @@
           records: [],
           warnings: [
             "Faltan columnas obligatorias. Se requiere al menos: PUNTO, COORDENADA_ESTE y COORDENADAS_NORTE.",
-            "Sugerido: incluir tambien ZONA_UTM (18S)."
+            "Sugerido: incluir tambien ZONA_UTM."
           ]
         };
       }
 
       const records = [];
+      let zoneMismatchRows = 0;
 
       for (let i = 1; i < rows.length; i += 1) {
         const row = rows[i];
@@ -613,18 +695,18 @@
           continue;
         }
 
-        const punto = sanitizePointName(row[cols.punto], i);
-        const zoneRaw = cols.zona >= 0 ? row[cols.zona] : "18S";
-        const zone = normalizeZone(zoneRaw);
-
-        if (!zone) {
-          warnings.push(`Fila ${visualRow}: zona UTM invalida (${zoneRaw}). Debe ser 18S.`);
-          continue;
-        }
-
-        if (zone !== "18S") {
-          warnings.push(`Fila ${visualRow}: zona ${zone} no soportada. Este conversor usa solo 18S.`);
-          continue;
+        const punto = sanitizePointName(row[cols.punto]);
+        const zoneRaw = cols.zona >= 0 ? row[cols.zona] : "";
+        const hasZoneValue = String(zoneRaw || "").trim() !== "";
+        if (hasZoneValue) {
+          const zoneFromRow = normalizeZone(zoneRaw, zoneConfig.hemisphere);
+          if (!zoneFromRow) {
+            warnings.push(`Fila ${visualRow}: zona UTM invalida (${zoneRaw}).`);
+            continue;
+          }
+          if (zoneFromRow !== selectedZone) {
+            zoneMismatchRows += 1;
+          }
         }
 
         const este = pickCoordinateValue(row[cols.este], 100000, 900000);
@@ -640,17 +722,23 @@
           continue;
         }
 
-        const geo = utm18SToLatLon(este, norte);
+        const geo = utmToLatLon(este, norte, zoneConfig.zoneNumber, zoneConfig.hemisphere);
 
         records.push({
           index: records.length + 1,
           punto,
-          zona: "18S",
+          zona: selectedZone,
+          zonaNumero: zoneConfig.zoneNumber,
+          hemisferio: zoneConfig.hemisphere,
           este,
           norte,
           lat: geo.lat,
           lon: geo.lon
         });
+      }
+
+      if (zoneMismatchRows > 0) {
+        warnings.push(`Se detectaron ${zoneMismatchRows} filas con zona distinta; se uso la zona seleccionada (${selectedZone}).`);
       }
 
       if (!records.length && !warnings.length) {
@@ -730,16 +818,19 @@
       el.summary.textContent = "Procesando archivo...";
 
       try {
+        const zoneConfig = getSelectedZoneConfig();
         const rows = await fileToRows(state.file);
-        const result = processRows(rows);
+        const result = processRows(rows, zoneConfig);
         state.records = result.records;
         state.warnings = result.warnings;
+        state.zoneNumber = zoneConfig.zoneNumber;
+        state.hemisphere = zoneConfig.hemisphere;
 
         renderWarnings(state.warnings);
         renderPreview(state.records);
         updateButtons();
 
-        el.summary.textContent = `Registros validos: ${state.records.length}. Registros con observaciones: ${state.warnings.length}.`;
+        el.summary.textContent = `Registros validos: ${state.records.length}. Zona aplicada: ${zoneConfig.zoneText}. Observaciones: ${state.warnings.length}.`;
       } catch (error) {
         state.records = [];
         state.warnings = [error.message || "No se pudo procesar el archivo."];
@@ -753,6 +844,7 @@
     }
 
     function buildKml(records) {
+      const zoneSlug = getZoneSlug();
       const placemarks = records
         .map((r) => {
           const description = `Zona UTM: ${r.zona} | Este: ${toFixedSafe(r.este, 3)} | Norte: ${toFixedSafe(r.norte, 3)}`;
@@ -768,7 +860,7 @@
       return `<?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2">
   <Document>
-    <name>puntos_utm18s</name>
+    <name>puntos_${zoneSlug}</name>
     ${placemarks}
   </Document>
 </kml>`;
@@ -780,7 +872,7 @@
       }
       const kml = buildKml(state.records);
       const blob = new Blob([kml], { type: "application/vnd.google-earth.kml+xml;charset=utf-8" });
-      downloadBlob(blob, "puntos_utm18s.kml");
+      downloadBlob(blob, `puntos_${getZoneSlug()}.kml`);
     }
 
     function encodeAscii(text, length) {
@@ -1001,16 +1093,22 @@
       return buildDbfFromRows(fields, rows);
     }
 
-    function buildPrj() {
-      return `PROJCS["WGS_1984_UTM_Zone_18S",GEOGCS["GCS_WGS_1984",DATUM["D_WGS_1984",SPHEROID["WGS_1984",6378137,298.257223563]],PRIMEM["Greenwich",0],UNIT["Degree",0.0174532925199433]],PROJECTION["Transverse_Mercator"],PARAMETER["False_Easting",500000],PARAMETER["False_Northing",10000000],PARAMETER["Central_Meridian",-75],PARAMETER["Scale_Factor",0.9996],PARAMETER["Latitude_Of_Origin",0],UNIT["Meter",1]]`;
+    function buildPrj(zoneNumber = 18, hemisphere = "S") {
+      const hemi = hemisphere === "N" ? "N" : "S";
+      const centralMeridian = zoneNumber * 6 - 183;
+      const falseNorthing = hemi === "S" ? 10000000 : 0;
+
+      return `PROJCS["WGS_1984_UTM_Zone_${zoneNumber}${hemi}",GEOGCS["GCS_WGS_1984",DATUM["D_WGS_1984",SPHEROID["WGS_1984",6378137,298.257223563]],PRIMEM["Greenwich",0],UNIT["Degree",0.0174532925199433]],PROJECTION["Transverse_Mercator"],PARAMETER["False_Easting",500000],PARAMETER["False_Northing",${falseNorthing}],PARAMETER["Central_Meridian",${centralMeridian}],PARAMETER["Scale_Factor",0.9996],PARAMETER["Latitude_Of_Origin",0],UNIT["Meter",1]]`;
     }
 
     function buildPointShapefileParts(records) {
+      const zoneNumber = records[0] && records[0].zonaNumero ? records[0].zonaNumero : state.zoneNumber;
+      const hemisphere = records[0] && records[0].hemisferio ? records[0].hemisferio : state.hemisphere;
       const points = records.map((r) => ({ x: r.este, y: r.norte }));
       const shp = buildPointShp(points);
       const shx = buildPointShx(points);
       const dbf = buildPointDbf(records);
-      const prj = buildPrj();
+      const prj = buildPrj(zoneNumber, hemisphere);
       const cpg = "UTF-8";
 
       return { shp, shx, dbf, prj, cpg };
@@ -1103,11 +1201,13 @@
     }
 
     function buildSernanpPolygonShapefileParts(records, bufferMeters = 20, segments = 40) {
+      const zoneNumber = records[0] && records[0].zonaNumero ? records[0].zonaNumero : state.zoneNumber;
+      const hemisphere = records[0] && records[0].hemisferio ? records[0].hemisferio : state.hemisphere;
       const geometry = buildBufferMultipartGeometry(records, bufferMeters, segments);
       const shp = buildPolygonSingleRecordShp(geometry);
       const shx = buildPolygonSingleRecordShx(geometry);
       const dbf = buildSernanpDbf(records.length, bufferMeters);
-      const prj = buildPrj();
+      const prj = buildPrj(zoneNumber, hemisphere);
       const cpg = "UTF-8";
 
       return { shp, shx, dbf, prj, cpg };
@@ -1172,7 +1272,7 @@
 
       try {
         const parts = buildPointShapefileParts(state.records);
-        await downloadShapefileZipFile(parts, "puntos_utm18s");
+        await downloadShapefileZipFile(parts, `puntos_${getZoneSlug()}`);
         el.summary.textContent = "Shapefile exportado en ZIP.";
       } catch (error) {
         const msg = error && error.message ? error.message : "No se pudo crear el shapefile ZIP.";
@@ -1185,16 +1285,57 @@
         throw new Error("No se pudo cargar la libreria XLSX para generar el archivo de SISFOR.");
       }
 
+      const sisforRows = records.map((record) => {
+        const zoneNum = Number(stripZoneHemisphere(record.zona));
+        return {
+          punto: record.punto,
+          zona: Number.isFinite(zoneNum) ? zoneNum : null,
+          este: Number(record.este),
+          norte: Number(record.norte)
+        };
+      });
+
       const rows = [
         ["PUNTO", "ZONA_UTM", "COORDENADA_ESTE", "COORDENADAS_NORTE"],
-        ...records.map((record) => [record.punto, record.zona, record.este, record.norte])
+        ...sisforRows.map((record) => [record.punto, record.zona, record.este, record.norte])
       ];
 
       const wb = XLSX.utils.book_new();
       const ws = XLSX.utils.aoa_to_sheet(rows);
       ws["!autofilter"] = { ref: "A1:D1" };
       ws["!cols"] = [{ wch: 16 }, { wch: 13 }, { wch: 18 }, { wch: 20 }];
-      XLSX.utils.book_append_sheet(wb, ws, "COORDENADAS");
+      ws["!dataValidation"] = [
+        {
+          sqref: "B2:B1048576",
+          type: "list",
+          allowBlank: true,
+          formula1: "\"17,18,19\""
+        }
+      ];
+
+      for (let i = 0; i < sisforRows.length; i += 1) {
+        const r = i + 2;
+        const zoneCell = `B${r}`;
+        const eastCell = `C${r}`;
+        const northCell = `D${r}`;
+        if (ws[zoneCell] && Number.isFinite(sisforRows[i].zona)) {
+          ws[zoneCell].t = "n";
+          ws[zoneCell].v = sisforRows[i].zona;
+          ws[zoneCell].z = "0";
+        }
+        if (ws[eastCell] && Number.isFinite(sisforRows[i].este)) {
+          ws[eastCell].t = "n";
+          ws[eastCell].v = sisforRows[i].este;
+          ws[eastCell].z = "0.00";
+        }
+        if (ws[northCell] && Number.isFinite(sisforRows[i].norte)) {
+          ws[northCell].t = "n";
+          ws[northCell].v = sisforRows[i].norte;
+          ws[northCell].z = "0.00";
+        }
+      }
+
+      XLSX.utils.book_append_sheet(wb, ws, "Datos");
 
       return XLSX.write(wb, { bookType: "xlsx", type: "array" });
     }
@@ -1209,52 +1350,59 @@
 
       try {
         const data = buildPlatformArtifacts(state.records);
+        const zoneSlug = getZoneSlug();
+        const zoneText = getZoneText();
+        const geoserforName = `geoserfor_puntos_${zoneSlug}`;
+        const sernanpName = `sernanp_buffer20m_${zoneSlug}_una_fila`;
+        const sigridName = `sigrid_puntos_${zoneSlug}`;
+        const sigdaName = `sigda_buffer20m_${zoneSlug}_una_fila`;
+        const sicarName = `sicar_puntos_${zoneSlug}`;
 
         if (typeof window.showDirectoryPicker === "function") {
           const selectedDir = await window.showDirectoryPicker();
-          const root = await selectedDir.getDirectoryHandle("PLATAFORMAS_UTM18S", { create: true });
+          const root = await selectedDir.getDirectoryHandle(`PLATAFORMAS_${zoneText}`, { create: true });
 
           const geoserforDir = await root.getDirectoryHandle("GEOSERFOR", { create: true });
-          await writeShapefileZipInDirectory(geoserforDir, "geoserfor_puntos_utm18s", data.pointParts);
-          await writeFileInDirectory(geoserforDir, "geoserfor_puntos_utm18s.kml", data.kmlText, "application/vnd.google-earth.kml+xml;charset=utf-8");
+          await writeShapefileZipInDirectory(geoserforDir, geoserforName, data.pointParts);
+          await writeFileInDirectory(geoserforDir, `${geoserforName}.kml`, data.kmlText, "application/vnd.google-earth.kml+xml;charset=utf-8");
 
           const sisforDir = await root.getDirectoryHandle("SISFOR", { create: true });
-          await writeFileInDirectory(sisforDir, "sisfor_coordenadas_utm18s.xlsx", data.sisforArray, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+          await writeFileInDirectory(sisforDir, `sisfor_coordenadas_${zoneSlug}.xlsx`, data.sisforArray, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
 
           const sernanpDir = await root.getDirectoryHandle("SERNANP", { create: true });
-          await writeShapefileZipInDirectory(sernanpDir, "sernanp_buffer20m_una_fila", data.sernanpParts);
+          await writeShapefileZipInDirectory(sernanpDir, sernanpName, data.sernanpParts);
 
           const sigridDir = await root.getDirectoryHandle("SIGRID", { create: true });
-          await writeShapefileZipInDirectory(sigridDir, "sigrid_puntos_utm18s", data.pointParts);
-          await writeFileInDirectory(sigridDir, "sigrid_puntos_utm18s.kml", data.kmlText, "application/vnd.google-earth.kml+xml;charset=utf-8");
+          await writeShapefileZipInDirectory(sigridDir, sigridName, data.pointParts);
+          await writeFileInDirectory(sigridDir, `${sigridName}.kml`, data.kmlText, "application/vnd.google-earth.kml+xml;charset=utf-8");
 
           const sigdaDir = await root.getDirectoryHandle("SIGDA", { create: true });
-          await writeShapefileZipInDirectory(sigdaDir, "sigda_puntos_utm18s", data.pointParts);
+          await writeShapefileZipInDirectory(sigdaDir, sigdaName, data.sernanpParts);
 
           const sicarDir = await root.getDirectoryHandle("SICAR", { create: true });
-          await writeShapefileZipInDirectory(sicarDir, "sicar_puntos_utm18s", data.pointParts);
-          await writeFileInDirectory(sicarDir, "sicar_puntos_utm18s.kml", data.kmlText, "application/vnd.google-earth.kml+xml;charset=utf-8");
+          await writeShapefileZipInDirectory(sicarDir, sicarName, data.pointParts);
+          await writeFileInDirectory(sicarDir, `${sicarName}.kml`, data.kmlText, "application/vnd.google-earth.kml+xml;charset=utf-8");
 
-          el.summary.textContent = "Exportado en PLATAFORMAS_UTM18S con GEOSERFOR, SISFOR, SERNANP, SIGRID, SIGDA y SICAR.";
+          el.summary.textContent = `Exportado en PLATAFORMAS_${zoneText} con GEOSERFOR, SISFOR, SERNANP, SIGRID, SIGDA y SICAR.`;
           return;
         }
 
-        await downloadShapefileZipFile(data.pointParts, "geoserfor_puntos_utm18s");
-        triggerDownload("geoserfor_puntos_utm18s.kml", data.kmlText, "application/vnd.google-earth.kml+xml;charset=utf-8");
+        await downloadShapefileZipFile(data.pointParts, geoserforName);
+        triggerDownload(`${geoserforName}.kml`, data.kmlText, "application/vnd.google-earth.kml+xml;charset=utf-8");
 
-        triggerDownload("sisfor_coordenadas_utm18s.xlsx", data.sisforArray, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        triggerDownload(`sisfor_coordenadas_${zoneSlug}.xlsx`, data.sisforArray, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
 
-        await downloadShapefileZipFile(data.sernanpParts, "sernanp_buffer20m_una_fila");
+        await downloadShapefileZipFile(data.sernanpParts, sernanpName);
 
-        await downloadShapefileZipFile(data.pointParts, "sigrid_puntos_utm18s");
-        triggerDownload("sigrid_puntos_utm18s.kml", data.kmlText, "application/vnd.google-earth.kml+xml;charset=utf-8");
+        await downloadShapefileZipFile(data.pointParts, sigridName);
+        triggerDownload(`${sigridName}.kml`, data.kmlText, "application/vnd.google-earth.kml+xml;charset=utf-8");
 
-        await downloadShapefileZipFile(data.pointParts, "sigda_puntos_utm18s");
+        await downloadShapefileZipFile(data.sernanpParts, sigdaName);
 
-        await downloadShapefileZipFile(data.pointParts, "sicar_puntos_utm18s");
-        triggerDownload("sicar_puntos_utm18s.kml", data.kmlText, "application/vnd.google-earth.kml+xml;charset=utf-8");
+        await downloadShapefileZipFile(data.pointParts, sicarName);
+        triggerDownload(`${sicarName}.kml`, data.kmlText, "application/vnd.google-earth.kml+xml;charset=utf-8");
 
-        el.summary.textContent = "Exportado en multiples descargas con GEOSERFOR, SISFOR, SERNANP, SIGRID, SIGDA y SICAR.";
+        el.summary.textContent = `Exportado en multiples descargas (${zoneText}) con GEOSERFOR, SISFOR, SERNANP, SIGRID, SIGDA y SICAR.`;
       } catch (error) {
         if (error && error.name === "AbortError") {
           el.summary.textContent = "Exportacion cancelada por el usuario.";
@@ -1271,8 +1419,8 @@
     function downloadTemplate() {
       const rows = [
         ["PUNTO", "ZONA_UTM", "COORDENADA_ESTE", "COORDENADAS_NORTE"],
-        ["P1", "18S", 500000, 9000000],
-        ["P2", "18S", 499850.5, 8999900.25]
+        ["", "", "", ""],
+        ["", "", "", ""]
       ];
 
       if (typeof XLSX !== "undefined") {
@@ -1293,3 +1441,4 @@
   </script>
 </body>
 </html>
+
